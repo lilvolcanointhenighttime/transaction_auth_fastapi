@@ -1,12 +1,12 @@
 import bcrypt
 from typing import Dict
 
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 
 from .config.log import logger
 from .schemas import ChangePasswordSchema, UserAuthSchema, UserResponseSchema
 from .utils import user_registration, user_authentication, filter_user, hash_password, change_user
-from .jwt import create_access_token, get_token
+from .jwt import create_access_token, get_token, decode_token
 
 
 router = APIRouter(tags=["auth"])
@@ -61,3 +61,16 @@ async def change_password(request: ChangePasswordSchema, token: str = Depends(ge
         logger.error(f"{e}")
         raise e
 
+@router.get("/current-user")
+async def get_current_user(token: str = Depends(get_token)):
+    try:
+        payload = decode_token(token)
+        user_id = payload.get("id")
+        if user_id:
+            logger.info(f"User: {user_id} hit /current-user endpoint")
+            return {
+                "id": user_id
+            }
+    except Exception as e:
+        logger.error(f"Error: {e}")
+        raise e
