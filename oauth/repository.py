@@ -6,7 +6,7 @@ from sqlalchemy import select
 
 class UserRepository():
     @classmethod
-    async def add(cls, data: dict) -> None:
+    async def add(cls, data: dict) -> dict:
         async with new_session() as session:
             user_orm = UserOrm(**data)
             session.add(user_orm)
@@ -18,8 +18,8 @@ class UserRepository():
     @classmethod
     async def return_all(cls):
         async with new_session() as session:
-            querry = select(UserOrm)
-            result = await session.execute(querry)
+            query = select(UserOrm)
+            result = await session.execute(query)
 
             users = result.scalars().all()
             return users
@@ -27,11 +27,11 @@ class UserRepository():
     @classmethod
     async def filter(cls, params: dict):
         async with new_session() as session:
-            querry = select(UserOrm)
+            query = select(UserOrm)
             for key, value in params.items():
                 if value:
-                    querry = querry.filter(getattr(UserOrm, key) == value)
-                    result = await session.execute(querry)  
+                    query = query.filter(getattr(UserOrm, key) == value)
+                    result = await session.execute(query)  
                 else:
                     pass
             user = result.scalar_one_or_none()
@@ -42,8 +42,8 @@ class UserRepository():
         email = params.get("email")
         new_password = params.get("new_password")
         async with new_session() as session:
-            querry = select(UserOrm).where(UserOrm.email == email)
-            result = await session.execute(querry)
+            query = select(UserOrm).where(UserOrm.email == email)
+            result = await session.execute(query)
             user = result.scalar_one_or_none()
             if not user:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User not found")

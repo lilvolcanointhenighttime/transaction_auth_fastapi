@@ -1,12 +1,15 @@
 import bcrypt
 from typing import Dict
 
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 
 from .config.log import logger
 from .schemas import ChangePasswordSchema, UserAuthSchema, UserResponseSchema
-from .utils import user_registration, user_authentication, filter_user, hash_password, change_user
 from .jwt import create_access_token, get_token, decode_token
+from .utils import (user_registration, 
+                    user_authentication, 
+                    filter_user, hash_password, 
+                    change_user, async_query_get)
 
 
 router = APIRouter(tags=["auth"])
@@ -16,6 +19,9 @@ async def registration(request: UserAuthSchema) -> UserResponseSchema:
     logger.info(f"Registering user: {request.email}")
     try:
         new_user = await user_registration(request)
+        params = {"user_id": new_user.get("id")}
+        print(params)
+        await async_query_get("http://nginx/api/transaction/create-balance", params=params)
         return new_user
     except Exception as e:
         logger.error(f"Error while registering user: {e}")

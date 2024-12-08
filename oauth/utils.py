@@ -1,4 +1,5 @@
 import bcrypt
+import aiohttp
 
 from fastapi import HTTPException, status
 from sqlalchemy.exc import SQLAlchemyError    
@@ -10,6 +11,18 @@ from .schemas import UserAuthSchema
 from .repository import UserRepository
 
 
+async def async_query_post(url: str, headers: dict = {}, params: dict = {}) -> dict:
+    async with aiohttp.ClientSession() as session:
+        async with session.post(headers=headers, url=url, params=params) as response:
+            data = await response.json()
+            return data
+    
+async def async_query_get(url: str, headers: dict = {}, params: dict = {}) -> dict:
+    async with aiohttp.ClientSession() as session:
+        async with session.get(headers=headers, url=url, params=params) as response:
+            data = await response.json()
+            return data
+
 def hash_password(password: str) -> str:
     if not password:
         raise ValueError("Password is empty.")
@@ -20,7 +33,7 @@ def hash_password(password: str) -> str:
     except Exception as e:
         raise e
 
-async def user_registration(requset: UserAuthSchema) -> UserOrm:
+async def user_registration(requset: UserAuthSchema) -> dict:
     if not requset.email or not requset.password:
         logger.error("Email or password is empty.")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email or password is empty.")

@@ -31,13 +31,51 @@ services:
     environment:
       - POSTGRES_USER=${POSTGRES_USER_OAUTH}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_OAUTH}
-      - POSTGRES_HOST_OAUTH_FASTAPI=${POSTGRES_HOST_OAUTH_FASTAPI}
+      - POSTGRES_HOST_OAUTH=${POSTGRES_HOST_OAUTH}
       - POSTGRES_PORT=${POSTGRES_PORT_OAUTH}
       - POSTGRES_DB=${POSTGRES_DB_OAUTH}
-      - GITHUB_CLINET_ID=${GITHUB_CLINET_ID}
-      - GITHUB_CLINET_SECRET=${GITHUB_CLINET_SECRET}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=${ALGORITHM}
     expose:
       - 8800
+
+  pg_transaction:
+    image: postgres:latest
+    container_name: pg_transaction
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER_TRANSACTION}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_TRANSACTION}
+      - POSTGRES_HOST=${POSTGRES_HOST_TRANSACTION}
+      - POSTGRES_PORT=${POSTGRES_PORT_TRANSACTION}
+      - POSTGRES_DB=${POSTGRES_DB_TRANSACTION}
+    expose:
+      - 5431
+  
+  fastapi_transaction:
+    container_name: fastapi_transaction
+    build:
+      context: .
+      dockerfile: ./transaction/docker/transaction.Dockerfile
+    command: >
+      sh -c "cd ./src && uvicorn transaction.app:app --host=0.0.0.0 --port=8880"
+    depends_on:
+      - pg_transaction
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER_TRANSACTION}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_TRANSACTION}
+      - POSTGRES_HOST_TRANSACTION=${POSTGRES_HOST_TRANSACTION}
+      - POSTGRES_PORT=${POSTGRES_PORT_TRANSACTION}
+      - POSTGRES_DB=${POSTGRES_DB_TRANSACTION}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=${ALGORITHM}
+    expose:
+      - 8880
 
   nginx:
     container_name: nginx
@@ -49,5 +87,3 @@ services:
       - fastapi_oauth
     ports:
       - "80:80"
-
-    

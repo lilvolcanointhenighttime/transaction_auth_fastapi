@@ -1,11 +1,10 @@
 import uvicorn
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 import aiohttp
-
 from .routers import router
 from .config.database import create_tables, drop_tables
+from fastapi.middleware.cors import CORSMiddleware
 
 
 aiohttp_clientsession: aiohttp.ClientSession = None
@@ -19,7 +18,7 @@ async def lifespan(app: FastAPI):
     await aiohttp_clientsession.close()
     # await drop_tables()
 
-app = FastAPI(title="OAuth", root_path="/api/oauth")
+app = FastAPI(title="OAuth", lifespan=lifespan, root_path="/api/transaction")
 
 origins = ["*"]
 
@@ -34,4 +33,4 @@ app.add_middleware(
 app.include_router(router)
 
 if __name__ == "__main__":
-    uvicorn.run(app='app:app', host="0.0.0.0", port=8800, reload=True, debug=True)
+    uvicorn.run(app='app:app', host="0.0.0.0", port=8880, reload=True, debug=True)
