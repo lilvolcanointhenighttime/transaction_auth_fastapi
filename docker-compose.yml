@@ -1,0 +1,89 @@
+version: "3.5"
+
+services:
+  pg_oauth:
+    image: postgres:latest
+    container_name: pg_oauth
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER_OAUTH}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_OAUTH}
+      - POSTGRES_HOST=${POSTGRES_HOST_OAUTH}
+      - POSTGRES_PORT=${POSTGRES_PORT_OAUTH}
+      - POSTGRES_DB=${POSTGRES_DB_OAUTH}
+    expose:
+      - 5432
+  
+  fastapi_oauth:
+    container_name: fastapi_oauth
+    build:
+      context: .
+      dockerfile: ./oauth/docker/oauth.Dockerfile
+    command: >
+      sh -c "cd ./src && uvicorn oauth.app:app --host=0.0.0.0 --port=8800"
+    depends_on:
+      - pg_oauth
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER_OAUTH}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_OAUTH}
+      - POSTGRES_HOST_OAUTH=${POSTGRES_HOST_OAUTH}
+      - POSTGRES_PORT=${POSTGRES_PORT_OAUTH}
+      - POSTGRES_DB=${POSTGRES_DB_OAUTH}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=${ALGORITHM}
+    expose:
+      - 8800
+
+  pg_transaction:
+    image: postgres:latest
+    container_name: pg_transaction
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER_TRANSACTION}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_TRANSACTION}
+      - POSTGRES_HOST=${POSTGRES_HOST_TRANSACTION}
+      - POSTGRES_PORT=${POSTGRES_PORT_TRANSACTION}
+      - POSTGRES_DB=${POSTGRES_DB_TRANSACTION}
+    expose:
+      - 5431
+  
+  fastapi_transaction:
+    container_name: fastapi_transaction
+    build:
+      context: .
+      dockerfile: ./transaction/docker/transaction.Dockerfile
+    command: >
+      sh -c "cd ./src && uvicorn transaction.app:app --host=0.0.0.0 --port=8880"
+    depends_on:
+      - pg_transaction
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER_TRANSACTION}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD_TRANSACTION}
+      - POSTGRES_HOST_TRANSACTION=${POSTGRES_HOST_TRANSACTION}
+      - POSTGRES_PORT=${POSTGRES_PORT_TRANSACTION}
+      - POSTGRES_DB=${POSTGRES_DB_TRANSACTION}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=${ALGORITHM}
+    expose:
+      - 8880
+
+  nginx:
+    container_name: nginx
+    build:
+      context: .
+      dockerfile: ./.nginx/nginx.Dockerfile
+    restart: always
+    depends_on:
+      - fastapi_oauth
+    ports:
+      - "80:80"
